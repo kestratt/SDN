@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: containerdmonitor
+  labels:
+    app: containerdmonitor
+spec:
+  selector:
+    matchLabels:
+      name: containerdmonitor
+  template:
+    metadata:
+      labels:
+        name: containerdmonitor
+    spec:
+      securityContext:
+        windowsOptions:
+          hostProcess: true
+          runAsUserName: "NT AUTHORITY\\SYSTEM"
+      hostNetwork: true
+      containers:
+      - name: containerdmonitor
+        image: mcr.microsoft.com/windows/servercore:ltsc2022
+        args:
+        - powershell.exe
+        - -Command
+        - "$BaseDir = \"c:\\k\\debug\";while(1){Invoke-WebRequest -UseBasicParsing \"https://raw.githubusercontent.com/kestratt/SDN/5a33f492e945fc106667c1ba292f6b1a77c194dc/Kubernetes/windows/debug/networkmonitor/containerdMonitor.ps1\" -OutFile $BaseDir\\containerdMonitor.ps1;c:\\k\\debug\\containerdMonitor.ps1; start-sleep 60;}"
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+          - name: kube-path
+            mountPath: C:\k
+      volumes:
+      - name: kube-path
+        hostPath:
+          path: C:\k
+      nodeSelector:
+        kubernetes.azure.com/os-sku: Windows2022
